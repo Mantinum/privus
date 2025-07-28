@@ -11,3 +11,54 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.chat-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.chat-area {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  height: 50vh;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  background: #fafafa;
+}
+
+.message {
+  margin-bottom: 0.5rem;
+  display: flex;
+}
+
+.message .bubble {
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  max-width: 80%;
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.message.user .bubble {
+  background: #dcf8c6;
+}
+
+.message.assistant {
+  justify-content: flex-start;
+}
+
+.message.assistant .bubble {
+  background: #eee;
+}
+
+.chat-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-form input {
+  flex: 1;
+}
