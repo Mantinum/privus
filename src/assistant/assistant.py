@@ -1,17 +1,50 @@
 import os
+import json
+import hashlib
+import base64
+import getpass
 import datetime
 from pathlib import Path
-from .crypto_utils import generate_key
+from .crypto_utils import derive_key, generate_salt
 from .database import Database
 from .nlp import parse_command
 
 DATA_DIR = Path(os.environ.get("PRIVUS_DATA", "data"))
 DB_PATH = DATA_DIR / "assistant.db"
+KEY_FILE = DATA_DIR / "key.json"
+
+
+def _load_or_create_key() -> bytes:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if KEY_FILE.exists():
+        with KEY_FILE.open("r") as f:
+            info = json.load(f)
+        salt = base64.b64decode(info["salt"])
+        stored_hash = info["hash"]
+        password = getpass.getpass("Mot de passe: ")
+        key = derive_key(password, salt)
+        if hashlib.sha256(key).hexdigest() != stored_hash:
+            raise ValueError("Mot de passe incorrect")
+        return key
+    else:
+        password = getpass.getpass("Cr\xe9ez un mot de passe: ")
+        salt = generate_salt()
+        key = derive_key(password, salt)
+        info = {
+            "salt": base64.b64encode(salt).decode("utf-8"),
+            "hash": hashlib.sha256(key).hexdigest(),
+        }
+        with KEY_FILE.open("w") as f:
+            json.dump(info, f)
+        return key
 
 
 def main():
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    key = generate_key()
+    try:
+        key = _load_or_create_key()
+    except ValueError as e:
+        print(str(e))
+        return
     db = Database(DB_PATH, key)
 
     print("Assistant personnel Privus. Tapez 'exit' pour quitter.")

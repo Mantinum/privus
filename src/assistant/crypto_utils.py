@@ -1,6 +1,12 @@
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
+from Crypto.Protocol.KDF import PBKDF2
+from Crypto.Hash import SHA256
 import base64
+import os
+
+SALT_SIZE = 16
+PBKDF2_ITERATIONS = 100_000
 
 KEY_SIZE = 32  # AES-256
 
@@ -8,6 +14,15 @@ KEY_SIZE = 32  # AES-256
 def generate_key() -> bytes:
     """Generate a random AES-256 key."""
     return get_random_bytes(KEY_SIZE)
+
+
+def derive_key(password: str, salt: bytes, iterations: int = PBKDF2_ITERATIONS) -> bytes:
+    """Derive a key from the given password and salt using PBKDF2."""
+    return PBKDF2(password.encode("utf-8"), salt, dkLen=KEY_SIZE, count=iterations, hmac_hash_module=SHA256)
+
+
+def generate_salt() -> bytes:
+    return os.urandom(SALT_SIZE)
 
 
 def encrypt(key: bytes, data: str) -> str:
