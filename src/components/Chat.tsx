@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, KeyboardEvent, useRef, useEffect } from 'react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -11,9 +11,13 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const endRef = useRef<HTMLDivElement | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  const sendMessage = async () => {
     const content = input.trim();
     if (!content) return;
     const newMessages = [...messages, { role: 'user', content }];
@@ -42,21 +46,35 @@ const Chat: React.FC = () => {
     }
   };
 
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    sendMessage();
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   return (
-    <div>
+    <div className="chat-wrapper">
       <div className="chat-area">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`message ${msg.role}`}>{msg.content}</div>
+          <div key={idx} className={`message ${msg.role}`}><div className="bubble">{msg.content}</div></div>
         ))}
         {loading && (
-          <div className="message assistant">Assistant en train de répondre...</div>
+          <div className="message assistant"><div className="bubble">Assistant en train de répondre...</div></div>
         )}
+        <div ref={endRef}></div>
       </div>
       <form onSubmit={handleSubmit} className="chat-form">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Votre message..."
           disabled={loading}
         />
