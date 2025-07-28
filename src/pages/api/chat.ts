@@ -9,9 +9,9 @@ export default async function handler(
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const { message } = req.body;
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'Message is required' });
+  const { messages } = req.body;
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ error: 'Messages are required' });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -28,7 +28,7 @@ export default async function handler(
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: message }],
+        messages,
       }),
     });
 

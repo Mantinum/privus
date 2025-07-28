@@ -3,8 +3,8 @@
 import React, { useState, FormEvent } from 'react';
 
 interface Message {
-  sender: 'user' | 'assistant';
-  text: string;
+  role: 'user' | 'assistant';
+  content: string;
 }
 
 const Chat: React.FC = () => {
@@ -16,7 +16,8 @@ const Chat: React.FC = () => {
     e.preventDefault();
     const content = input.trim();
     if (!content) return;
-    setMessages((prev) => [...prev, { sender: 'user', text: content }]);
+    const newMessages = [...messages, { role: 'user', content }];
+    setMessages(newMessages);
     setInput('');
     setLoading(true);
 
@@ -24,15 +25,17 @@ const Chat: React.FC = () => {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content }),
+        body: JSON.stringify({
+          messages: newMessages.slice(-10),
+        }),
       });
       const data = await res.json();
       const reply = res.ok && data.reply ? data.reply : 'Erreur du serveur.';
-      setMessages((prev) => [...prev, { sender: 'assistant', text: reply }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { sender: 'assistant', text: 'Erreur de réseau.' },
+        { role: 'assistant', content: 'Erreur de réseau.' },
       ]);
     } finally {
       setLoading(false);
@@ -43,7 +46,7 @@ const Chat: React.FC = () => {
     <div>
       <div className="chat-area">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`message ${msg.sender}`}>{msg.text}</div>
+          <div key={idx} className={`message ${msg.role}`}>{msg.content}</div>
         ))}
         {loading && (
           <div className="message assistant">Assistant en train de répondre...</div>
