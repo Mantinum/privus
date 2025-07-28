@@ -10,6 +10,7 @@ interface Message {
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -17,6 +18,7 @@ const Chat: React.FC = () => {
     if (!content) return;
     setMessages((prev) => [...prev, { sender: 'user', text: content }]);
     setInput('');
+    setLoading(true);
 
     try {
       const res = await fetch('/api/chat', {
@@ -32,6 +34,8 @@ const Chat: React.FC = () => {
         ...prev,
         { sender: 'assistant', text: 'Erreur de réseau.' },
       ]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,6 +45,9 @@ const Chat: React.FC = () => {
         {messages.map((msg, idx) => (
           <div key={idx} className={`message ${msg.sender}`}>{msg.text}</div>
         ))}
+        {loading && (
+          <div className="message assistant">Assistant en train de répondre...</div>
+        )}
       </div>
       <form onSubmit={handleSubmit} className="chat-form">
         <input
@@ -48,8 +55,9 @@ const Chat: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Votre message..."
+          disabled={loading}
         />
-        <button type="submit">Envoyer</button>
+        <button type="submit" disabled={loading || !input.trim()}>Envoyer</button>
       </form>
     </div>
   );
