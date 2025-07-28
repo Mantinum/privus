@@ -11,12 +11,28 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const content = input.trim();
     if (!content) return;
-    setMessages([...messages, { sender: 'user', text: content }]);
+    setMessages((prev) => [...prev, { sender: 'user', text: content }]);
     setInput('');
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content }),
+      });
+      const data = await res.json();
+      const reply = res.ok && data.reply ? data.reply : 'Erreur du serveur.';
+      setMessages((prev) => [...prev, { sender: 'assistant', text: reply }]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'assistant', text: 'Erreur de réseau.' },
+      ]);
+    }
   };
 
   return (
