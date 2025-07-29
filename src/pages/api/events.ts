@@ -18,17 +18,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'POST') {
-    const { title, time } = req.body || {};
-    if (!title || !time) {
-      return res.status(400).json({ error: 'Title and time required' });
+    const { title, time, date } = req.body || {};
+    if (!title || !time || !date) {
+      return res.status(400).json({ error: 'Title, date and time required' });
     }
-    const now = new Date();
-    const [h, m] = String(time).split(':').map((s: string) => parseInt(s, 10));
-    if (Number.isNaN(h) || Number.isNaN(m)) {
-      return res.status(400).json({ error: 'Invalid time format' });
+    const dt = new Date(`${date}T${time}:00`);
+    if (isNaN(dt.getTime())) {
+      return res.status(400).json({ error: 'Invalid date or time format' });
     }
-    const dt = new Date(now);
-    dt.setHours(h, m, 0, 0);
     const py = spawnSync(
       'python3',
       ['src/assistant/web_bridge.py', 'add', title, dt.toISOString()],
@@ -40,6 +37,22 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(200).json({ status: 'ok' });
   }
 
-  res.setHeader('Allow', 'GET, POST');
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    const idNum = parseInt(Array.isArray(id) ? id[0] : id || '', 10);
+    if (!id || Number.isNaN(idNum)) {
+      return res.status(400).json({ error: 'ID required' });
+    }
+    const py = spawnSync('python3', ['src/assistant/web_bridge.py', 'delete', String(idNum)], { encoding: 'utf-8' });
+    if (py.error) {
+      return res.status(500).json({ error: 'Failed to delete event' });
+    }
+    if (py.status !== 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    return res.status(200).json({ status: 'ok' });
+  }
+
+  res.setHeader('Allow', 'GET, POST, DELETE');
   return res.status(405).end();
 }

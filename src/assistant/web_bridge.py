@@ -42,6 +42,19 @@ def cmd_list() -> None:
     print(json.dumps(events, default=str))
 
 
+def cmd_delete(id_str: str) -> None:
+    try:
+        event_id = int(id_str)
+    except ValueError:
+        print("Invalid ID", file=sys.stderr)
+        sys.exit(1)
+    if _db.delete_event(event_id):
+        print("OK")
+    else:
+        print("Not found", file=sys.stderr)
+        sys.exit(1)
+
+
 def cmd_profile_get() -> None:
     profile = load_profile()
     print(json.dumps(profile, ensure_ascii=False))
@@ -68,6 +81,8 @@ if __name__ == "__main__":
         cmd_add(sys.argv[2], sys.argv[3])
     elif command == "list":
         cmd_list()
+    elif command == "delete" and len(sys.argv) >= 3:
+        cmd_delete(sys.argv[2])
     elif command == "profile_get":
         cmd_profile_get()
     elif command == "profile_set" and len(sys.argv) >= 3:
@@ -75,4 +90,3 @@ if __name__ == "__main__":
     else:
         print("Invalid command", file=sys.stderr)
         sys.exit(1)
-
