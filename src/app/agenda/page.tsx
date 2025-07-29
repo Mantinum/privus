@@ -65,7 +65,7 @@ const AgendaPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="agenda-wrapper">
       <h1>Agenda</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: '1rem' }}>
         <input
