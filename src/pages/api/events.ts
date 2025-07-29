@@ -1,10 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { spawnSync } from 'child_process';
 
+const env = { PYTHONPATH: 'src', ...process.env };
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const py = spawnSync('python3', ['src/assistant/web_bridge.py', 'list'], {
       encoding: 'utf-8',
+      env,
     });
     if (py.error) {
       return res.status(500).json({ error: 'Failed to access agenda' });
@@ -29,7 +32,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const py = spawnSync(
       'python3',
       ['src/assistant/web_bridge.py', 'add', title, dt.toISOString()],
-      { encoding: 'utf-8' }
+      { encoding: 'utf-8', env }
     );
     if (py.error) {
       return res.status(500).json({ error: 'Failed to add event' });
@@ -43,7 +46,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!id || Number.isNaN(idNum)) {
       return res.status(400).json({ error: 'ID required' });
     }
-    const py = spawnSync('python3', ['src/assistant/web_bridge.py', 'delete', String(idNum)], { encoding: 'utf-8' });
+    const py = spawnSync('python3', ['src/assistant/web_bridge.py', 'delete', String(idNum)], { encoding: 'utf-8', env });
     if (py.error) {
       return res.status(500).json({ error: 'Failed to delete event' });
     }

@@ -1,10 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { spawnSync } from 'child_process';
 
+const env = { PYTHONPATH: 'src', ...process.env };
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const py = spawnSync('python3', ['src/assistant/web_bridge.py', 'profile_get'], {
       encoding: 'utf-8',
+      env,
     });
     if (py.error) {
       return res.status(500).json({ error: 'Failed to load profile' });
@@ -22,7 +25,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const py = spawnSync(
       'python3',
       ['src/assistant/web_bridge.py', 'profile_set', payload],
-      { encoding: 'utf-8' }
+      { encoding: 'utf-8', env }
     );
     if (py.error) {
       return res.status(500).json({ error: 'Failed to save profile' });
