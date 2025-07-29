@@ -1,6 +1,9 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+)
 
 import datetime
 from assistant.database import Database
@@ -34,3 +37,15 @@ def test_get_all_events(tmp_path):
     assert events[0]["title"] == "A"
     assert events[1]["title"] == "B"
 
+
+def test_delete_event(tmp_path):
+    key = generate_key()
+    db_file = tmp_path / "events.db"
+    db = Database(db_file, key)
+    dt = datetime.datetime(2024, 1, 1, 15, 0)
+    db.add_event("ToDelete", dt)
+    event_id = db.get_all_events()[0]["id"]
+    assert db.delete_event(event_id) is True
+    assert db.get_all_events() == []
+    # deleting again should return False
+    assert db.delete_event(event_id) is False
