@@ -1,6 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { spawnSync } from 'child_process';
 
+const env = { PYTHONPATH: 'src', ...process.env };
+
+// Load plugins once when the API file is first evaluated
+const pl = spawnSync('python3', ['src/assistant/web_bridge.py', 'plugins_load'], {
+  encoding: 'utf-8',
+  env,
+});
+if (!pl.error && pl.stdout.trim()) {
+  console.log(pl.stdout.trim());
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -17,6 +28,7 @@ export default async function handler(
 
   const profPy = spawnSync('python3', ['src/assistant/web_bridge.py', 'profile_get'], {
     encoding: 'utf-8',
+    env,
   });
   let profile: any = {};
   if (!profPy.error) {
@@ -33,12 +45,27 @@ export default async function handler(
   const lastContent =
     typeof last?.content === 'string' ? last.content.toLowerCase() : '';
 
+  const pluginPy = spawnSync(
+    'python3',
+    ['src/assistant/web_bridge.py', 'plugin_parse', lastContent],
+    { encoding: 'utf-8', env }
+  );
+  if (!pluginPy.error) {
+    try {
+      const obj = JSON.parse(pluginPy.stdout.trim() || '{}');
+      if (obj.reply) {
+        return res.status(200).json({ reply: obj.reply });
+      }
+    } catch {}
+  }
+
   if (lastContent.includes('demain') && lastContent.includes("que j'ai")) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dateStr = tomorrow.toISOString().slice(0, 10);
     const py = spawnSync('python3', ['src/assistant/web_bridge.py', 'get', dateStr], {
       encoding: 'utf-8',
+      env,
     });
     if (py.error) {
       return res.status(500).json({ error: 'Failed to access agenda' });
@@ -77,7 +104,7 @@ export default async function handler(
       'add',
       `Rappel: ${note}`,
       now.toISOString(),
-    ]);
+    ], { env });
     return res.status(200).json({
       reply: `D'accord, je vous rappellerai de ${note} à ${hour}h aujourd'hui.`,
     });

@@ -1,0 +1,7 @@
+{
+  "slug": "weather",
+  "name": "Weather Plugin",
+  "description": "Donne la m\u00e9t\u00e9o actuelle",
+  "permissions": ["webRequest"],
+  "pattern": "m\u00e9t\u00e9o"
+}

@@ -8,6 +8,7 @@ from pathlib import Path
 from .crypto_utils import derive_key, generate_salt
 from .database import Database
 from .nlp import parse_command
+from .plugin_loader import load_plugins
 
 DATA_DIR = Path(os.environ.get("PRIVUS_DATA", "data"))
 DB_PATH = DATA_DIR / "assistant.db"
@@ -47,6 +48,8 @@ def main():
         return
     db = Database(DB_PATH, key)
 
+    load_plugins()
+
     print("Assistant personnel Privus. Tapez 'exit' pour quitter.")
     while True:
         try:
@@ -82,6 +85,8 @@ def main():
             dt = datetime.datetime.combine(date, datetime.time(hour=hour))
             db.add_event(f"Rappel: {note}", dt)
             print("Rappel ajouté.")
+        elif name == "reply":
+            print(params.get("text", ""))
 
 
 if __name__ == "__main__":

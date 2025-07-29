@@ -4,9 +4,19 @@ import os
 import datetime
 from pathlib import Path
 
-from .database import Database
-from .crypto_utils import generate_key
-from .profile import load_profile, save_profile
+if __package__ is None or __package__ == "":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from assistant.database import Database
+    from assistant.crypto_utils import generate_key
+    from assistant.profile import load_profile, save_profile
+    from assistant.plugin_loader import load_plugins
+    from assistant.nlp import parse_command
+else:
+    from .database import Database
+    from .crypto_utils import generate_key
+    from .profile import load_profile, save_profile
+    from .plugin_loader import load_plugins
+    from .nlp import parse_command
 
 DATA_DIR = Path(os.environ.get("PRIVUS_DATA", "data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -70,6 +80,20 @@ def cmd_profile_set(json_str: str) -> None:
     print("OK")
 
 
+def cmd_plugins_load() -> None:
+    """Load plugins once."""
+    load_plugins()
+
+
+def cmd_plugin_parse(text: str) -> None:
+    load_plugins()
+    result = parse_command(text)
+    if result and result[0] == "reply":
+        print(json.dumps({"reply": result[1]["text"]}, ensure_ascii=False))
+    else:
+        print("{}")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Missing command", file=sys.stderr)
@@ -87,6 +111,10 @@ if __name__ == "__main__":
         cmd_profile_get()
     elif command == "profile_set" and len(sys.argv) >= 3:
         cmd_profile_set(sys.argv[2])
+    elif command == "plugins_load":
+        cmd_plugins_load()
+    elif command == "plugin_parse" and len(sys.argv) >= 3:
+        cmd_plugin_parse(sys.argv[2])
     else:
         print("Invalid command", file=sys.stderr)
         sys.exit(1)
