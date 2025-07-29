@@ -60,6 +60,9 @@ const Chat: React.FC = () => {
 
   return (
     <div className="chat-wrapper">
+      <div style={{ marginBottom: '0.5rem' }}>
+        <a href="/agenda">Voir l'agenda</a>
+      </div>
       <div className="chat-area">
         {messages.map((msg, idx) => (
           <div key={idx} className={`message ${msg.role}`}><div className="bubble">{msg.content}</div></div>

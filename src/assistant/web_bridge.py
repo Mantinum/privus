@@ -36,6 +36,11 @@ def cmd_add(title: str, dt_str: str) -> None:
     print("OK")
 
 
+def cmd_list() -> None:
+    events = _db.get_all_events()
+    print(json.dumps(events, default=str))
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Missing command", file=sys.stderr)
@@ -45,6 +50,8 @@ if __name__ == "__main__":
         cmd_get(sys.argv[2])
     elif command == "add" and len(sys.argv) >= 4:
         cmd_add(sys.argv[2], sys.argv[3])
+    elif command == "list":
+        cmd_list()
     else:
         print("Invalid command", file=sys.stderr)
         sys.exit(1)

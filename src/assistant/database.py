@@ -41,3 +41,14 @@ class Database:
             if dt.date() == date:
                 results.append({"title": title, "datetime": dt})
         return results
+
+    def get_all_events(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, title, time FROM events")
+        events = []
+        for event_id, enc_title, enc_time in cursor.fetchall():
+            title = decrypt(self.key, enc_title)
+            dt = datetime.datetime.fromisoformat(decrypt(self.key, enc_time))
+            events.append({"id": event_id, "title": title, "datetime": dt})
+        events.sort(key=lambda e: e["datetime"])
+        return events
