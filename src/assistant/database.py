@@ -52,3 +52,10 @@ class Database:
             events.append({"id": event_id, "title": title, "datetime": dt})
         events.sort(key=lambda e: e["datetime"])
         return events
+
+    def delete_event(self, event_id: int) -> bool:
+        cursor = self.conn.cursor()
+        cursor.execute("DELETE FROM events WHERE id = ?", (event_id,))
+        deleted = cursor.rowcount
+        self.conn.commit()
+        return deleted > 0
