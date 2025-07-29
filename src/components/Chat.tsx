@@ -1,6 +1,12 @@
 'use client'
 
-import React, { useState, FormEvent, KeyboardEvent, useRef, useEffect } from 'react';
+import React, {
+  useState,
+  FormEvent,
+  KeyboardEvent,
+  useRef,
+  useEffect,
+} from 'react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,18 +18,45 @@ const Chat: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
+  const [recognizing, setRecognizing] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  const sendMessage = async () => {
-    const content = input.trim();
+  useEffect(() => {
+    const SpeechRec =
+      typeof window !== 'undefined'
+        ? (window as any).SpeechRecognition ||
+          (window as any).webkitSpeechRecognition
+        : null;
+    if (!SpeechRec) return;
+    const recog = new SpeechRec();
+    recog.lang = 'fr-FR';
+    recog.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      setRecognizing(false);
+      sendMessage(transcript);
+    };
+    recog.onerror = () => {
+      setRecognizing(false);
+      alert('La reconnaissance vocale a échoué');
+    };
+    recog.onend = () => setRecognizing(false);
+    recognitionRef.current = recog;
+  }, []);
+
+  const sendMessage = async (override?: string) => {
+    const content = (override ?? input).trim();
     if (!content) return;
     const newMessages = [...messages, { role: 'user', content }];
     setMessages(newMessages);
     setInput('');
     setLoading(true);
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
 
     try {
       const res = await fetch('/api/chat', {
@@ -36,11 +69,19 @@ const Chat: React.FC = () => {
       const data = await res.json();
       const reply = res.ok && data.reply ? data.reply : 'Erreur du serveur.';
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const u = new SpeechSynthesisUtterance(reply);
+        u.lang = 'fr-FR';
+        window.speechSynthesis.speak(u);
+      }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Erreur de réseau.' },
-      ]);
+      const errMsg = 'Erreur de réseau.';
+      setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }]);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const u = new SpeechSynthesisUtterance(errMsg);
+        u.lang = 'fr-FR';
+        window.speechSynthesis.speak(u);
+      }
     } finally {
       setLoading(false);
     }
@@ -58,8 +99,21 @@ const Chat: React.FC = () => {
     }
   };
 
+  const startRecognition = () => {
+    const rec = recognitionRef.current;
+    if (!rec) {
+      alert("La reconnaissance vocale n'est pas supportée par votre navigateur");
+      return;
+    }
+    setRecognizing(true);
+    rec.start();
+  };
+
   return (
     <div className="chat-wrapper">
+      <div style={{ marginBottom: '0.5rem' }}>
+        <a href="/agenda">Voir l'agenda</a> | <a href="/settings">Paramètres</a>
+      </div>
       <div className="chat-area">
         {messages.map((msg, idx) => (
           <div key={idx} className={`message ${msg.role}`}><div className="bubble">{msg.content}</div></div>
@@ -78,6 +132,14 @@ const Chat: React.FC = () => {
           placeholder="Votre message..."
           disabled={loading}
         />
+        <button
+          type="button"
+          onClick={startRecognition}
+          disabled={loading}
+          style={{ marginLeft: '0.5rem' }}
+        >
+          {recognizing ? '🎤 Enregistrement…' : '🎤'}
+        </button>
         <button type="submit" disabled={loading || !input.trim()}>Envoyer</button>
       </form>
     </div>
