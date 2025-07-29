@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .database import Database
 from .crypto_utils import generate_key
+from .profile import load_profile, save_profile
 
 DATA_DIR = Path(os.environ.get("PRIVUS_DATA", "data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -41,6 +42,21 @@ def cmd_list() -> None:
     print(json.dumps(events, default=str))
 
 
+def cmd_profile_get() -> None:
+    profile = load_profile()
+    print(json.dumps(profile, ensure_ascii=False))
+
+
+def cmd_profile_set(json_str: str) -> None:
+    try:
+        data = json.loads(json_str)
+    except Exception:
+        print("Invalid JSON", file=sys.stderr)
+        sys.exit(1)
+    save_profile(data)
+    print("OK")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Missing command", file=sys.stderr)
@@ -52,6 +68,10 @@ if __name__ == "__main__":
         cmd_add(sys.argv[2], sys.argv[3])
     elif command == "list":
         cmd_list()
+    elif command == "profile_get":
+        cmd_profile_get()
+    elif command == "profile_set" and len(sys.argv) >= 3:
+        cmd_profile_set(sys.argv[2])
     else:
         print("Invalid command", file=sys.stderr)
         sys.exit(1)

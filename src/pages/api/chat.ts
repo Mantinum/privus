@@ -15,6 +15,20 @@ export default async function handler(
     return res.status(400).json({ error: 'Messages are required' });
   }
 
+  const profPy = spawnSync('python3', ['src/assistant/web_bridge.py', 'profile_get'], {
+    encoding: 'utf-8',
+  });
+  let profile: any = {};
+  if (!profPy.error) {
+    try {
+      profile = JSON.parse(profPy.stdout.trim() || '{}');
+    } catch {
+      profile = {};
+    }
+  }
+  const model = typeof profile.model === 'string' ? profile.model : 'gpt-3.5-turbo';
+  const tone = profile.tone === 'tu' ? 'tu' : 'vous';
+
   const last = messages[messages.length - 1];
   const lastContent =
     typeof last?.content === 'string' ? last.content.toLowerCase() : '';
@@ -74,6 +88,10 @@ export default async function handler(
     return res.status(500).json({ error: 'Missing OpenAI API key' });
   }
 
+  const requestMessages = tone === 'tu'
+    ? [{ role: 'system', content: "Tutoye l'utilisateur dans tes réponses." }, ...messages]
+    : messages;
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -82,8 +100,8 @@ export default async function handler(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages,
+        model,
+        messages: requestMessages,
       }),
     });
 

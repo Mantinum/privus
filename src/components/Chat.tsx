@@ -112,7 +112,7 @@ const Chat: React.FC = () => {
   return (
     <div className="chat-wrapper">
       <div style={{ marginBottom: '0.5rem' }}>
-        <a href="/agenda">Voir l'agenda</a>
+        <a href="/agenda">Voir l'agenda</a> | <a href="/settings">Paramètres</a>
       </div>
       <div className="chat-area">
         {messages.map((msg, idx) => (
