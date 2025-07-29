@@ -62,3 +62,18 @@ code {
 .chat-form input {
   flex: 1;
 }
+
+input,
+button,
+select {
+  min-height: 44px;
+}
+
+@media (max-width: 600px) {
+  .chat-wrapper,
+  .agenda-wrapper {
+    max-width: 100%;
+    margin: 0;
+    padding: 1rem;
+  }
+}
