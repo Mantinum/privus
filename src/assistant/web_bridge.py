@@ -12,6 +12,7 @@ if __package__ is None or __package__ == "":
     from assistant import plugin_loader
     from assistant.plugin_loader import load_plugins, list_plugins
     from assistant.nlp import parse_command
+    from assistant import local_ai
 else:
     from .database import Database
     from .crypto_utils import generate_key
@@ -19,6 +20,7 @@ else:
     from . import plugin_loader
     from .plugin_loader import load_plugins, list_plugins
     from .nlp import parse_command
+    from . import local_ai
 
 DATA_DIR = Path(os.environ.get("PRIVUS_DATA", "data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -145,6 +147,25 @@ def cmd_plugin_parse(text: str) -> None:
         print("{}")
 
 
+def cmd_local_chat(json_str: str) -> None:
+    try:
+        messages = json.loads(json_str)
+    except Exception:
+        messages = []
+    reply = local_ai.chat(messages)
+    print(reply)
+
+
+def cmd_model_exists(model_name: str) -> None:
+    path = local_ai.model_path(model_name)
+    print("1" if path.exists() else "0")
+
+
+def cmd_model_download(model_name: str) -> None:
+    local_ai.download_model(model_name)
+    print("OK")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Missing command", file=sys.stderr)
@@ -172,6 +193,12 @@ if __name__ == "__main__":
         cmd_plugin_set(sys.argv[2], sys.argv[3])
     elif command == "plugin_parse" and len(sys.argv) >= 3:
         cmd_plugin_parse(sys.argv[2])
+    elif command == "local_chat" and len(sys.argv) >= 3:
+        cmd_local_chat(sys.argv[2])
+    elif command == "model_exists" and len(sys.argv) >= 3:
+        cmd_model_exists(sys.argv[2])
+    elif command == "model_download" and len(sys.argv) >= 3:
+        cmd_model_download(sys.argv[2])
     else:
         print("Invalid command", file=sys.stderr)
         sys.exit(1)

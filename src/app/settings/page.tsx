@@ -7,6 +7,8 @@ const SettingsPage: React.FC = () => {
   const [model, setModel] = useState('gpt-3.5-turbo');
   const [tone, setTone] = useState('vous');
   const [status, setStatus] = useState('');
+  const [localReady, setLocalReady] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     fetch('/api/profile')
@@ -17,6 +19,10 @@ const SettingsPage: React.FC = () => {
         if (typeof data.model === 'string') setModel(data.model);
         if (typeof data.tone === 'string') setTone(data.tone);
       });
+
+    fetch('/api/local/exists?model=ggml-gpt4all-j')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setLocalReady(!!d?.exists));
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -31,6 +37,21 @@ const SettingsPage: React.FC = () => {
     } else {
       setStatus("Erreur lors de l'enregistrement");
     }
+  };
+
+  const downloadModel = () => {
+    setProgress(0);
+    const es = new EventSource('/api/local/download?model=ggml-gpt4all-j');
+    es.onmessage = (ev) => {
+      if (ev.data === 'DONE') {
+        setProgress(100);
+        setLocalReady(true);
+        es.close();
+      } else {
+        const p = parseInt(ev.data, 10);
+        if (!isNaN(p)) setProgress(p);
+      }
+    };
   };
 
   return (
@@ -73,6 +94,24 @@ const SettingsPage: React.FC = () => {
             <option value="tu">Tutoyer</option>
           </select>
         </label>
+        {localReady ? (
+          <span className="text-sm inline-block bg-green-700 px-2 py-1 rounded">IA locale prête ✅</span>
+        ) : (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={downloadModel}
+              className="rounded bg-[#2563eb] text-white px-4 py-2 w-full"
+            >
+              Télécharger modèle
+            </button>
+            {progress > 0 && (
+              <progress value={progress} max={100} className="w-full">
+                {progress}%
+              </progress>
+            )}
+          </div>
+        )}
         <button
           type="submit"
           className="rounded bg-[#2563eb] text-white px-4 py-2 w-full"
