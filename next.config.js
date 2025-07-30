@@ -1,6 +1,28 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-};
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  dynamicStartUrl: true,
+  runtimeCaching: [
+    {
+      urlPattern: /^\/_next\//,
+      handler: 'CacheFirst',
+    },
+    {
+      urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*$/i,
+      handler: 'CacheFirst',
+    },
+    {
+      urlPattern: /^\/api\/events/,
+      handler: 'NetworkFirst',
+      method: 'GET',
+    },
+  ],
+  fallbacks: {
+    html: '/offline',
+  },
+});
 
-module.exports = nextConfig;
+module.exports = withPWA({
+  reactStrictMode: true,
+});

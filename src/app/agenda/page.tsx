@@ -22,6 +22,9 @@ const AgendaPage: React.FC = () => {
     if (res.ok) {
       const data = await res.json();
       setEvents(data.events || []);
+      if (!navigator.onLine) {
+        setMessage('Lecture offline');
+      }
     }
   };
 
@@ -65,7 +68,7 @@ const AgendaPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="agenda-container">
       <h1>Agenda</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: '1rem' }}>
         <input
