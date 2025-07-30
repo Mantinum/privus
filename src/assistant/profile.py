@@ -12,6 +12,7 @@ DEFAULT_PROFILE = {
     "model": "gpt-3.5-turbo",
     "tone": "vous",
     "language": "fr",
+    "enabledPlugins": [],
 }
 
 

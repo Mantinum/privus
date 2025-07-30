@@ -9,13 +9,15 @@ if __package__ is None or __package__ == "":
     from assistant.database import Database
     from assistant.crypto_utils import generate_key
     from assistant.profile import load_profile, save_profile
-    from assistant.plugin_loader import load_plugins
+    from assistant import plugin_loader
+    from assistant.plugin_loader import load_plugins, list_plugins
     from assistant.nlp import parse_command
 else:
     from .database import Database
     from .crypto_utils import generate_key
     from .profile import load_profile, save_profile
-    from .plugin_loader import load_plugins
+    from . import plugin_loader
+    from .plugin_loader import load_plugins, list_plugins
     from .nlp import parse_command
 
 DATA_DIR = Path(os.environ.get("PRIVUS_DATA", "data"))
@@ -85,6 +87,34 @@ def cmd_plugins_load() -> None:
     load_plugins()
 
 
+def cmd_plugins_list() -> None:
+    infos = [
+        {
+            "slug": p.slug,
+            "name": p.name,
+            "description": p.description,
+            "version": p.version,
+            "enabled": p.enabled,
+        }
+        for p in list_plugins()
+    ]
+    print(json.dumps(infos, ensure_ascii=False))
+
+
+def cmd_plugin_set(slug: str, enabled_str: str) -> None:
+    enabled = enabled_str.lower() in {"1", "true", "yes"}
+    profile = load_profile()
+    plugins = set(profile.get("enabledPlugins", []))
+    if enabled:
+        plugins.add(slug)
+    else:
+        plugins.discard(slug)
+    profile["enabledPlugins"] = sorted(plugins)
+    save_profile(profile)
+    plugin_loader.reset()
+    print("OK")
+
+
 def cmd_plugin_parse(text: str) -> None:
     load_plugins()
     result = parse_command(text)
@@ -113,6 +143,10 @@ if __name__ == "__main__":
         cmd_profile_set(sys.argv[2])
     elif command == "plugins_load":
         cmd_plugins_load()
+    elif command == "plugins_list":
+        cmd_plugins_list()
+    elif command == "plugin_set" and len(sys.argv) >= 4:
+        cmd_plugin_set(sys.argv[2], sys.argv[3])
     elif command == "plugin_parse" and len(sys.argv) >= 3:
         cmd_plugin_parse(sys.argv[2])
     else:
