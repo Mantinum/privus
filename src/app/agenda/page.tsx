@@ -16,13 +16,21 @@ const AgendaPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [message, setMessage] = useState('');
+  const [offline, setOffline] = useState(false);
 
   const fetchEvents = async () => {
-    const res = await fetch('/api/events');
-    if (res.ok) {
-      const data = await res.json();
-      setEvents(data.events || []);
+    let fromCache = !navigator.onLine;
+    try {
+      const res = await fetch('/api/events');
+      if (res.ok) {
+        const data = await res.json();
+        setEvents(data.events || []);
+        if (!navigator.onLine) fromCache = true;
+      }
+    } catch {
+      fromCache = true;
     }
+    setOffline(fromCache);
   };
 
   useEffect(() => {
@@ -65,7 +73,7 @@ const AgendaPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="agenda-container">
       <h1>Agenda</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: '1rem' }}>
         <input
@@ -87,6 +95,7 @@ const AgendaPage: React.FC = () => {
         <button type="submit" disabled={loading}>Ajouter</button>
       </form>
       {message && <p>{message}</p>}
+      {offline && <p>Lecture offline</p>}
       <ul>
         {events.map((ev) => (
           <li key={ev.id}>
