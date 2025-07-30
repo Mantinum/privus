@@ -18,6 +18,7 @@ const withPWA = require('next-pwa')({
       method: 'GET',
     },
   ],
+  importScripts: ['push-sw.js'],
   fallbacks: {
     html: '/offline',
   },
