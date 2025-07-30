@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react';
-import Chat from '@/components/Chat';
+import Chat from '../components/Chat';
 
 const HomePage: React.FC = () => {
   const [name, setName] = useState('');
@@ -15,8 +15,10 @@ const HomePage: React.FC = () => {
   }, []);
 
   return (
-    <div>
-      <h1>{name ? `Bonjour ${name} !` : 'Bienvenue sur Privus'}</h1>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">
+        {name ? `Bonjour ${name} !` : 'Bienvenue sur Privus'}
+      </h1>
       <Chat />
     </div>
   );

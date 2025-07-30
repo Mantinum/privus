@@ -1,14 +1,15 @@
 'use client'
 
 import React from 'react';
+import Link from 'next/link';
 
 const OfflinePage: React.FC = () => (
-  <div>
-    <h1>Pas de connexion</h1>
+  <div className="space-y-4">
+    <h1 className="text-xl font-bold">Pas de connexion</h1>
     <p>Les données locales restent accessibles.</p>
-    <a href="/agenda">
-      <button>Ouvrir l'agenda</button>
-    </a>
+    <Link href="/agenda" className="rounded bg-[#2563eb] text-white px-4 py-2 inline-block">
+      Ouvrir l'agenda
+    </Link>
   </div>
 );
 

@@ -34,34 +34,53 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1>Paramètres</h1>
+    <div className="flex justify-center">
       <form
         onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '20rem' }}
+        className="max-w-md w-full bg-[#111827] rounded-xl shadow p-6 space-y-4"
       >
-        <label>
-          Nom
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+        <h1 className="text-xl font-bold mb-2">Paramètres</h1>
+        <label className="block">
+          <span className="sr-only">Nom</span>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nom"
+            className="w-full border border-[#2563eb] rounded p-2 bg-transparent text-[#f3f4f6]"
+          />
         </label>
-        <label>
-          Modèle IA
-          <select value={model} onChange={(e) => setModel(e.target.value)}>
+        <label className="block">
+          <span className="sr-only">Modèle IA</span>
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="w-full border border-[#2563eb] rounded p-2 bg-transparent text-[#f3f4f6]"
+          >
             <option value="gpt-3.5-turbo">GPT-3.5</option>
             <option value="gpt-4">GPT-4</option>
             <option value="local">Modèle local</option>
           </select>
         </label>
-        <label>
-          Ton
-          <select value={tone} onChange={(e) => setTone(e.target.value)}>
+        <label className="block">
+          <span className="sr-only">Ton</span>
+          <select
+            value={tone}
+            onChange={(e) => setTone(e.target.value)}
+            className="w-full border border-[#2563eb] rounded p-2 bg-transparent text-[#f3f4f6]"
+          >
             <option value="vous">Vouvoyer</option>
             <option value="tu">Tutoyer</option>
           </select>
         </label>
-        <button type="submit">Sauvegarder</button>
+        <button
+          type="submit"
+          className="rounded bg-[#2563eb] text-white px-4 py-2 w-full"
+        >
+          Sauvegarder
+        </button>
+        {status && <p className="text-sm">{status}</p>}
       </form>
-      {status && <p>{status}</p>}
     </div>
   );
 };
