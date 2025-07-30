@@ -50,7 +50,7 @@ const Chat: React.FC = () => {
   const sendMessage = async (override?: string) => {
     const content = (override ?? input).trim();
     if (!content) return;
-    const newMessages = [...messages, { role: 'user', content }];
+    const newMessages: Message[] = [...messages, { role: 'user', content }];
     setMessages(newMessages);
     setInput('');
     setLoading(true);
@@ -75,7 +75,7 @@ const Chat: React.FC = () => {
         window.speechSynthesis.speak(u);
       }
     } catch {
-      const errMsg = 'Erreur de réseau.';
+      const errMsg = "Mode hors-ligne : l’IA distante est indisponible. Consultez ou ajoutez des événements dans l’Agenda.";
       setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }]);
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         const u = new SpeechSynthesisUtterance(errMsg);
@@ -110,7 +110,7 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className="chat-wrapper">
+    <div className="chat-wrapper chat-container">
       <div style={{ marginBottom: '0.5rem' }}>
         <a href="/agenda">Voir l'agenda</a> | <a href="/settings">Paramètres</a>
       </div>
