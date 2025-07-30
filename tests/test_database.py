@@ -49,3 +49,17 @@ def test_delete_event(tmp_path):
     assert db.get_all_events() == []
     # deleting again should return False
     assert db.delete_event(event_id) is False
+
+
+def test_update_event(tmp_path):
+    key = generate_key()
+    db_file = tmp_path / "events.db"
+    db = Database(db_file, key)
+    dt = datetime.datetime(2024, 1, 1, 15, 0)
+    db.add_event("Old", dt)
+    event_id = db.get_all_events()[0]["id"]
+    new_dt = dt + datetime.timedelta(hours=1)
+    assert db.update_event(event_id, title="New", dt=new_dt) is True
+    ev = db.get_all_events()[0]
+    assert ev["title"] == "New"
+    assert ev["datetime"] == new_dt

@@ -59,3 +59,26 @@ class Database:
         deleted = cursor.rowcount
         self.conn.commit()
         return deleted > 0
+
+    def update_event(
+        self,
+        event_id: int,
+        title: str | None = None,
+        dt: datetime.datetime | None = None,
+    ) -> bool:
+        if title is None and dt is None:
+            return False
+        parts = []
+        values = []
+        if title is not None:
+            parts.append("title = ?")
+            values.append(encrypt(self.key, title))
+        if dt is not None:
+            parts.append("time = ?")
+            values.append(encrypt(self.key, dt.isoformat()))
+        values.append(event_id)
+        cursor = self.conn.cursor()
+        cursor.execute(f"UPDATE events SET {', '.join(parts)} WHERE id = ?", values)
+        updated = cursor.rowcount
+        self.conn.commit()
+        return updated > 0

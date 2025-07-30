@@ -1,7 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { spawnSync } from 'child_process';
+import { spawnSync, spawn } from 'child_process';
 
 const env = { PYTHONPATH: 'src', ...process.env };
+
+export const config = {
+  api: { responseLimit: false },
+};
 
 // Load plugins once when the API file is first evaluated
 const pl = spawnSync('python3', ['src/assistant/web_bridge.py', 'plugins_load'], {
@@ -23,8 +27,18 @@ export default async function handler(
 
   const { messages } = req.body;
   if (!Array.isArray(messages)) {
-    return res.status(400).json({ error: 'Messages are required' });
+    res.statusCode = 400;
+    return res.end('data: error\n\n');
   }
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+  const send = (text: string) => {
+    res.write(`data: ${text}\n\n`);
+  };
 
   const profPy = spawnSync('python3', ['src/assistant/web_bridge.py', 'profile_get'], {
     encoding: 'utf-8',
@@ -54,7 +68,8 @@ export default async function handler(
     try {
       const obj = JSON.parse(pluginPy.stdout.trim() || '{}');
       if (obj.reply) {
-        return res.status(200).json({ reply: obj.reply });
+        send(obj.reply);
+        return res.end();
       }
     } catch {}
   }
@@ -68,14 +83,14 @@ export default async function handler(
       env,
     });
     if (py.error) {
-      return res.status(500).json({ error: 'Failed to access agenda' });
+      send('Erreur agenda');
+      return res.end();
     }
     try {
       const events = JSON.parse(py.stdout.trim() || '[]');
       if (!events.length) {
-        return res
-          .status(200)
-          .json({ reply: "Vous n'avez aucun événement prévu pour demain." });
+        send("Vous n'avez aucun événement prévu pour demain.");
+        return res.end();
       }
       const lines = events.map(
         (ev: { title: string; datetime: string }) =>
@@ -85,9 +100,11 @@ export default async function handler(
           })}`
       );
       const reply = `Demain, vous avez :\n${lines.join('\n')}`;
-      return res.status(200).json({ reply });
+      send(reply);
+      return res.end();
     } catch {
-      return res.status(500).json({ error: 'Invalid agenda data' });
+      send('Erreur lecture agenda');
+      return res.end();
     }
   }
 
@@ -105,14 +122,23 @@ export default async function handler(
       `Rappel: ${note}`,
       now.toISOString(),
     ], { env });
-    return res.status(200).json({
-      reply: `D'accord, je vous rappellerai de ${note} à ${hour}h aujourd'hui.`,
-    });
+    send(`D'accord, je vous rappellerai de ${note} à ${hour}h aujourd'hui.`);
+    return res.end();
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
+  if (model === 'local') {
+    const py = spawnSync(
+      'python3',
+      ['src/assistant/web_bridge.py', 'local_chat', JSON.stringify(messages)],
+      { encoding: 'utf-8', env }
+    );
+    send(py.stdout.toString().trim());
+    return res.end();
+  }
   if (!apiKey) {
-    return res.status(500).json({ error: 'Missing OpenAI API key' });
+    send('error');
+    return res.end();
   }
 
   const requestMessages = tone === 'tu'
@@ -133,14 +159,16 @@ export default async function handler(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(500).json({ error: 'OpenAI error', detail: errorText });
+      send('error');
+      return res.end();
     }
 
     const data = await response.json();
     const reply = data.choices?.[0]?.message?.content ?? '';
-    return res.status(200).json({ reply });
+    send(reply);
+    return res.end();
   } catch (err) {
-    return res.status(500).json({ error: 'Request failed' });
+    send('error');
+    return res.end();
   }
 }

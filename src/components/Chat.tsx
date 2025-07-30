@@ -50,7 +50,7 @@ const Chat: React.FC = () => {
   const sendMessage = async (override?: string) => {
     const content = (override ?? input).trim();
     if (!content) return;
-    const newMessages = [...messages, { role: 'user', content }];
+    const newMessages: Message[] = [...messages, { role: 'user' as const, content }];
     setMessages(newMessages);
     setInput('');
     setLoading(true);
@@ -68,7 +68,7 @@ const Chat: React.FC = () => {
       });
       const data = await res.json();
       const reply = res.ok && data.reply ? data.reply : 'Erreur du serveur.';
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      setMessages((prev) => [...prev, { role: 'assistant' as const, content: reply }]);
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         const u = new SpeechSynthesisUtterance(reply);
         u.lang = 'fr-FR';
@@ -77,7 +77,7 @@ const Chat: React.FC = () => {
     } catch {
       const errMsg =
         "Mode hors-ligne : l\u2019IA distante est indisponible. Consultez ou ajoutez des \u00e9v\u00e9nements dans l\u2019Agenda.";
-      setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }]);
+      setMessages((prev) => [...prev, { role: 'assistant' as const, content: errMsg }]);
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         const u = new SpeechSynthesisUtterance(errMsg);
         u.lang = 'fr-FR';
@@ -111,37 +111,55 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className="chat-wrapper chat-container">
-      <div style={{ marginBottom: '0.5rem' }}>
-        <a href="/agenda">Voir l'agenda</a> | <a href="/settings">Paramètres</a>
-      </div>
-      <div className="chat-area">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 p-4 rounded-lg border border-[#2563eb] bg-[#111827] max-h-[60vh] overflow-y-auto">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`message ${msg.role}`}><div className="bubble">{msg.content}</div></div>
+          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div
+              className={`px-3 py-2 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-[#2563eb] text-white' : 'bg-[#111827] border border-[#2563eb]'}`}
+            >
+              {msg.content}
+            </div>
+          </div>
         ))}
         {loading && (
-          <div className="message assistant"><div className="bubble">Assistant en train de répondre...</div></div>
+          <div className="flex justify-start">
+            <div className="px-3 py-2 rounded-lg max-w-[80%] bg-[#111827] border border-[#2563eb]">
+              Assistant en train de répondre...
+            </div>
+          </div>
         )}
-        <div ref={endRef}></div>
+        <div ref={endRef} />
       </div>
-      <form onSubmit={handleSubmit} className="chat-form">
+      <form onSubmit={handleSubmit} className="flex gap-2 w-full">
+        <label htmlFor="msg" className="sr-only">
+          Message
+        </label>
         <input
+          id="msg"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Votre message..."
           disabled={loading}
+          className="flex-1 rounded border border-[#2563eb] p-2 bg-transparent text-[#f3f4f6]"
         />
         <button
           type="button"
           onClick={startRecognition}
           disabled={loading}
-          style={{ marginLeft: '0.5rem' }}
+          className="rounded border border-[#2563eb] px-3"
         >
-          {recognizing ? '🎤 Enregistrement…' : '🎤'}
+          {recognizing ? '🎤…' : '🎤'}
         </button>
-        <button type="submit" disabled={loading || !input.trim()}>Envoyer</button>
+        <button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="rounded bg-[#2563eb] text-white px-4"
+        >
+          Envoyer
+        </button>
       </form>
     </div>
   );

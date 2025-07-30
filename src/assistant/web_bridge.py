@@ -9,14 +9,18 @@ if __package__ is None or __package__ == "":
     from assistant.database import Database
     from assistant.crypto_utils import generate_key
     from assistant.profile import load_profile, save_profile
-    from assistant.plugin_loader import load_plugins
+    from assistant import plugin_loader
+    from assistant.plugin_loader import load_plugins, list_plugins
     from assistant.nlp import parse_command
+    from assistant import local_ai
 else:
     from .database import Database
     from .crypto_utils import generate_key
     from .profile import load_profile, save_profile
-    from .plugin_loader import load_plugins
+    from . import plugin_loader
+    from .plugin_loader import load_plugins, list_plugins
     from .nlp import parse_command
+    from . import local_ai
 
 DATA_DIR = Path(os.environ.get("PRIVUS_DATA", "data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -65,6 +69,27 @@ def cmd_delete(id_str: str) -> None:
         sys.exit(1)
 
 
+def cmd_update(id_str: str, json_str: str) -> None:
+    try:
+        event_id = int(id_str)
+    except ValueError:
+        print("Invalid ID", file=sys.stderr)
+        sys.exit(1)
+    try:
+        data = json.loads(json_str)
+    except Exception:
+        print("Invalid JSON", file=sys.stderr)
+        sys.exit(1)
+    title = data.get("title")
+    dt_str = data.get("dateISO")
+    dt = datetime.datetime.fromisoformat(dt_str) if dt_str else None
+    if _db.update_event(event_id, title=title, dt=dt):
+        print("OK")
+    else:
+        print("Not found", file=sys.stderr)
+        sys.exit(1)
+
+
 def cmd_profile_get() -> None:
     profile = load_profile()
     print(json.dumps(profile, ensure_ascii=False))
@@ -85,6 +110,34 @@ def cmd_plugins_load() -> None:
     load_plugins()
 
 
+def cmd_plugins_list() -> None:
+    infos = [
+        {
+            "slug": p.slug,
+            "name": p.name,
+            "description": p.description,
+            "version": p.version,
+            "enabled": p.enabled,
+        }
+        for p in list_plugins()
+    ]
+    print(json.dumps(infos, ensure_ascii=False))
+
+
+def cmd_plugin_set(slug: str, enabled_str: str) -> None:
+    enabled = enabled_str.lower() in {"1", "true", "yes"}
+    profile = load_profile()
+    plugins = set(profile.get("enabledPlugins", []))
+    if enabled:
+        plugins.add(slug)
+    else:
+        plugins.discard(slug)
+    profile["enabledPlugins"] = sorted(plugins)
+    save_profile(profile)
+    plugin_loader.reset()
+    print("OK")
+
+
 def cmd_plugin_parse(text: str) -> None:
     load_plugins()
     result = parse_command(text)
@@ -92,6 +145,25 @@ def cmd_plugin_parse(text: str) -> None:
         print(json.dumps({"reply": result[1]["text"]}, ensure_ascii=False))
     else:
         print("{}")
+
+
+def cmd_local_chat(json_str: str) -> None:
+    try:
+        messages = json.loads(json_str)
+    except Exception:
+        messages = []
+    reply = local_ai.chat(messages)
+    print(reply)
+
+
+def cmd_model_exists(model_name: str) -> None:
+    path = local_ai.model_path(model_name)
+    print("1" if path.exists() else "0")
+
+
+def cmd_model_download(model_name: str) -> None:
+    local_ai.download_model(model_name)
+    print("OK")
 
 
 if __name__ == "__main__":
@@ -107,14 +179,26 @@ if __name__ == "__main__":
         cmd_list()
     elif command == "delete" and len(sys.argv) >= 3:
         cmd_delete(sys.argv[2])
+    elif command == "update" and len(sys.argv) >= 4:
+        cmd_update(sys.argv[2], sys.argv[3])
     elif command == "profile_get":
         cmd_profile_get()
     elif command == "profile_set" and len(sys.argv) >= 3:
         cmd_profile_set(sys.argv[2])
     elif command == "plugins_load":
         cmd_plugins_load()
+    elif command == "plugins_list":
+        cmd_plugins_list()
+    elif command == "plugin_set" and len(sys.argv) >= 4:
+        cmd_plugin_set(sys.argv[2], sys.argv[3])
     elif command == "plugin_parse" and len(sys.argv) >= 3:
         cmd_plugin_parse(sys.argv[2])
+    elif command == "local_chat" and len(sys.argv) >= 3:
+        cmd_local_chat(sys.argv[2])
+    elif command == "model_exists" and len(sys.argv) >= 3:
+        cmd_model_exists(sys.argv[2])
+    elif command == "model_download" and len(sys.argv) >= 3:
+        cmd_model_download(sys.argv[2])
     else:
         print("Invalid command", file=sys.stderr)
         sys.exit(1)
